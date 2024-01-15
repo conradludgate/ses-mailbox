@@ -25,7 +25,7 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
         let messages = match response {
             Ok(message) => message,
             Err(e) => {
-                tracing::warn!("error getting messages: {e}");
+                tracing::warn!("error getting messages: {e:?}");
                 tokio::time::sleep(time::Duration::from_secs(600)).await;
                 continue;
             }
@@ -44,11 +44,15 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
                 tracing::warn!("missing message body");
                 continue;
             };
+            let Some(message_id) = message.body() else {
+                tracing::warn!("missing message ID");
+                continue;
+            };
 
             let value = match serde_json::from_str::<SQS<S3Email>>(body) {
                 Ok(message) => message,
                 Err(e) => {
-                    tracing::warn!("error parsing message from sqs: {e}");
+                    tracing::warn!("error parsing message from sqs: {e:?}");
                     continue;
                 }
             };
@@ -64,42 +68,42 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
             let message = match response {
                 Ok(message) => message,
                 Err(e) => {
-                    tracing::warn!("error getting object from s3: {e}");
+                    tracing::warn!("error getting object from s3: {e:?}");
                     continue;
                 }
             };
 
+            tracing::trace!(id = ?message_id, source = ?value.message.mail.source, destination = ?value.message.mail.destination, "you got mail");
+
             let mut body = message.body;
 
-            if let Some(common) = value.message.mail.common_headers {
-                let (tx, rx) = oneshot::channel();
+            let (tx, rx) = oneshot::channel();
 
-                delivery_tx
-                    .send(DeliveryEvent::Ingest {
-                        message: IngestMessage {
-                            sender_address: common.from.first().cloned().unwrap_or_default(),
-                            recipients: common.to,
-                            message_data: utils::ipc::MessageData::Bytes(Box::pin(
-                                futures::stream::poll_fn(move |cx| {
-                                    Pin::new(&mut body)
-                                        .poll_next(cx)
-                                        .map_err(|x| Box::new(x) as BoxedError)
-                                }),
-                            )),
-                        },
-                        result_tx: tx,
-                    })
-                    .await
-                    .expect("mail server closed");
+            delivery_tx
+                .send(DeliveryEvent::Ingest {
+                    message: IngestMessage {
+                        sender_address: value.message.mail.source,
+                        recipients: value.message.mail.destination,
+                        message_data: utils::ipc::MessageData::Bytes(Box::pin(
+                            futures::stream::poll_fn(move |cx| {
+                                Pin::new(&mut body)
+                                    .poll_next(cx)
+                                    .map_err(|x| Box::new(x) as BoxedError)
+                            }),
+                        )),
+                    },
+                    result_tx: tx,
+                })
+                .await
+                .expect("mail server closed");
 
-                let entry = DeleteMessageBatchRequestEntry::builder()
-                    .id(uuid::Uuid::now_v7().to_string())
-                    .receipt_handle(handle)
-                    .build()
-                    .unwrap();
+            let entry = DeleteMessageBatchRequestEntry::builder()
+                .id(uuid::Uuid::now_v7().to_string())
+                .receipt_handle(handle)
+                .build()
+                .unwrap();
 
-                responses.push((rx, entry));
-            }
+            responses.push((rx, entry));
         }
 
         let mut builder = sqs_client.delete_message_batch().queue_url(&queue_url);
@@ -113,7 +117,6 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
                             DeliveryResult::Success => {}
                             DeliveryResult::PermanentFailure { code, reason } => {
                                 tracing::warn!(code = ?code, "permanent ingest failure: {reason}");
-                                all_ok = false;
                             }
                             DeliveryResult::TemporaryFailure { reason } => {
                                 tracing::warn!("temporary ingest failure: {reason}");
@@ -126,13 +129,19 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
                     }
                 }
                 Err(e) => {
-                    tracing::warn!("could not ingest message: {e}");
+                    tracing::warn!("could not ingest message: {e:?}");
                 }
             }
         }
 
-        if let Err(err) = builder.send().await {
-            tracing::warn!("could not clear messages: {err}");
+        if builder
+            .get_entries()
+            .as_ref()
+            .is_some_and(|x| !x.is_empty())
+        {
+            if let Err(err) = builder.send().await {
+                tracing::warn!("could not clear messages: {err:?}");
+            }
         }
     }
 }
