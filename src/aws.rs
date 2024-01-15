@@ -17,18 +17,22 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
         let response = sqs_client
             .receive_message()
             .max_number_of_messages(10)
-            .wait_time_seconds(20)
             .queue_url(&queue_url)
             .send()
             .await;
 
         let messages = match response {
-            Ok(message) => message,
             Err(e) => {
                 tracing::warn!("error getting messages: {e:?}");
-                tokio::time::sleep(time::Duration::from_secs(600)).await;
+                tokio::time::sleep(time::Duration::from_secs(60)).await;
                 continue;
             }
+            Ok(message) if message.messages().is_empty() => {
+                tracing::debug!("no messages");
+                tokio::time::sleep(time::Duration::from_secs(60)).await;
+                continue;
+            }
+            Ok(message) => message,
         };
 
         tracing::info!("got messages");
@@ -44,12 +48,12 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
                 tracing::warn!("missing message body");
                 continue;
             };
-            let Some(message_id) = message.body() else {
+            let Some(message_id) = message.message_id() else {
                 tracing::warn!("missing message ID");
                 continue;
             };
 
-            let value = match serde_json::from_str::<SQS<S3Email>>(body) {
+            let value = match serde_json::from_str::<SqsMessage<S3Email>>(body) {
                 Ok(message) => message,
                 Err(e) => {
                     tracing::warn!("error parsing message from sqs: {e:?}");
@@ -149,20 +153,19 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 #[serde(bound(deserialize = "T: serde::de::DeserializeOwned"))]
-struct SQS<T> {
-    #[serde(rename = "Type")]
-    kind: String,
-    message_id: String,
-    signature: String,
-    signature_version: String,
-    #[serde(rename = "SigningCertURL")]
-    signing_cert_url: String,
-    subject: String,
-    timestamp: String,
-    topic_arn: String,
-    #[serde(rename = "UnsubscribeURL")]
-    unsubscribe_url: String,
-
+struct SqsMessage<T> {
+    // #[serde(rename = "Type")]
+    // kind: String,
+    // message_id: String,
+    // signature: String,
+    // signature_version: String,
+    // #[serde(rename = "SigningCertURL")]
+    // signing_cert_url: String,
+    // subject: String,
+    // timestamp: String,
+    // topic_arn: String,
+    // #[serde(rename = "UnsubscribeURL")]
+    // unsubscribe_url: String,
     #[serde(deserialize_with = "deserialize_json_string")]
     message: T,
 }
@@ -181,14 +184,14 @@ where
 #[serde(rename_all = "camelCase")]
 struct Mail {
     destination: Vec<String>,
-    message_id: String,
+    // message_id: String,
     source: String,
-    timestamp: String,
-    common_headers: Option<CommonMailHeaders>,
-    #[serde(default)]
-    headers: Vec<MailHeader>,
-    #[serde(default)]
-    headers_truncated: bool,
+    // timestamp: String,
+    // common_headers: Option<CommonMailHeaders>,
+    // #[serde(default)]
+    // headers: Vec<MailHeader>,
+    // #[serde(default)]
+    // headers_truncated: bool,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -196,51 +199,51 @@ struct Mail {
 struct S3Action {
     bucket_name: String,
     object_key: String,
-    object_key_prefix: String,
-    topic_arn: String,
-    #[serde(rename = "type")]
-    kind: String,
+    // object_key_prefix: String,
+    // topic_arn: String,
+    // #[serde(rename = "type")]
+    // kind: String,
 }
 
-#[derive(serde::Deserialize, Debug)]
-struct Verdict {
-    status: String,
-}
+// #[derive(serde::Deserialize, Debug)]
+// struct Verdict {
+//     status: String,
+// }
 
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct S3Receipt {
     action: S3Action,
-    dkim_verdict: Verdict,
-    processing_time_millis: i64,
-    recipients: Vec<String>,
-    spam_verdict: Verdict,
-    spf_verdict: Verdict,
-    timestamp: String,
-    virus_verdict: Verdict,
+    // dkim_verdict: Verdict,
+    // processing_time_millis: i64,
+    // recipients: Vec<String>,
+    // spam_verdict: Verdict,
+    // spf_verdict: Verdict,
+    // timestamp: String,
+    // virus_verdict: Verdict,
 }
 
 #[derive(serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct S3Email {
     mail: Mail,
-    notification_type: String,
+    // notification_type: String,
     receipt: S3Receipt,
 }
 
-#[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct CommonMailHeaders {
-    date: String,
-    from: Vec<String>,
-    message_id: String,
-    return_path: String,
-    subject: String,
-    to: Vec<String>,
-}
-#[derive(serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-struct MailHeader {
-    name: String,
-    value: String,
-}
+// #[derive(serde::Deserialize, Debug)]
+// #[serde(rename_all = "camelCase")]
+// struct CommonMailHeaders {
+//     date: String,
+//     from: Vec<String>,
+//     message_id: String,
+//     return_path: String,
+//     subject: String,
+//     to: Vec<String>,
+// }
+// #[derive(serde::Deserialize, Debug)]
+// #[serde(rename_all = "camelCase")]
+// struct MailHeader {
+//     name: String,
+//     value: String,
+// }
