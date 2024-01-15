@@ -42,10 +42,18 @@ async fn main() -> std::io::Result<()> {
     let config = Config::init();
 
     // Enable tracing
+    let level = config.value("global.tracing.level").unwrap_or("info");
     let _tracer = enable_tracing(
         &config,
+        |filter| {
+            filter.add_directive(
+                format!("ses_mailbox={level}")
+                    .parse()
+                    .failed("could not parse log"),
+            )
+        },
         &format!(
-            "Starting Stalwart IMAP Server v{}...",
+            "Starting SES-Mailbox Server v{}...",
             env!("CARGO_PKG_VERSION"),
         ),
     )

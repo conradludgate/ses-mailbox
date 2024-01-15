@@ -1730,7 +1730,7 @@ dependencies = [
 [[package]]
 name = "directory"
 version = "0.1.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "argon2",
@@ -2853,7 +2853,7 @@ checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 [[package]]
 name = "imap"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "dashmap",
@@ -2879,7 +2879,7 @@ dependencies = [
 [[package]]
 name = "imap_proto"
 version = "0.1.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "chrono",
@@ -2989,7 +2989,7 @@ dependencies = [
 [[package]]
 name = "jmap"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -3043,7 +3043,7 @@ dependencies = [
 [[package]]
 name = "jmap_proto"
 version = "0.1.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "fast-float",
@@ -3378,7 +3378,7 @@ dependencies = [
 [[package]]
 name = "managesieve"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "bincode",
@@ -3636,7 +3636,7 @@ dependencies = [
 [[package]]
 name = "nlp"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "bincode",
@@ -5542,7 +5542,7 @@ checksum = "2593d31f82ead8df961d8bd23a64c2ccf2eb5dd34b0a34bfb4dd54011c72009e"
 [[package]]
 name = "smtp"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "bincode",
@@ -5681,7 +5681,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 [[package]]
 name = "store"
 version = "0.1.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "async-trait",
@@ -6439,7 +6439,7 @@ checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 [[package]]
 name = "utils"
 version = "0.5.0"
-source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#dba9671ddfd64ae645e8dfbaa29cdda0e96450f2"
+source = "git+https://github.com/conradludgate/mail-server?branch=v0.5.0-alt#e1011de3398ea0242f7e78b683ed2f6a17f5e0b6"
 dependencies = [
  "ahash 0.8.7",
  "bytes",

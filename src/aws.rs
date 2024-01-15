@@ -1,3 +1,4 @@
+use core::time;
 use std::pin::Pin;
 
 use aws_sdk_sqs::types::DeleteMessageBatchRequestEntry;
@@ -10,14 +11,27 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
     let sqs_client = aws_sdk_sqs::Client::new(&config);
     let s3_client = aws_sdk_s3::Client::new(&config);
 
+    tracing::info!(%queue_url, "Starting SQS mail ingestor");
+
     loop {
-        let messages = sqs_client
+        let response = sqs_client
             .receive_message()
             .max_number_of_messages(10)
+            .wait_time_seconds(20)
             .queue_url(&queue_url)
             .send()
-            .await
-            .unwrap();
+            .await;
+
+        let messages = match response {
+            Ok(message) => message,
+            Err(e) => {
+                tracing::warn!("error getting messages: {e}");
+                tokio::time::sleep(time::Duration::from_secs(600)).await;
+                continue;
+            }
+        };
+
+        tracing::info!("got messages");
 
         let mut responses = vec![];
 
@@ -31,15 +45,30 @@ pub async fn ingest(queue_url: String, delivery_tx: mpsc::Sender<DeliveryEvent>)
                 continue;
             };
 
-            let value = serde_json::from_str::<SQS<S3Email>>(body).unwrap();
+            let value = match serde_json::from_str::<SQS<S3Email>>(body) {
+                Ok(message) => message,
+                Err(e) => {
+                    tracing::warn!("error parsing message from sqs: {e}");
+                    continue;
+                }
+            };
+
             let action = &value.message.receipt.action;
-            let message = s3_client
+            let response = s3_client
                 .get_object()
                 .bucket(&action.bucket_name)
                 .key(&action.object_key)
                 .send()
-                .await
-                .unwrap();
+                .await;
+
+            let message = match response {
+                Ok(message) => message,
+                Err(e) => {
+                    tracing::warn!("error getting object from s3: {e}");
+                    continue;
+                }
+            };
+
             let mut body = message.body;
 
             if let Some(common) = value.message.mail.common_headers {
@@ -191,6 +220,7 @@ struct S3Email {
 }
 
 #[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct CommonMailHeaders {
     date: String,
     from: Vec<String>,
@@ -200,6 +230,7 @@ struct CommonMailHeaders {
     to: Vec<String>,
 }
 #[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct MailHeader {
     name: String,
     value: String,
